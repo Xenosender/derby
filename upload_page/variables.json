@@ -1,0 +1,8 @@
+{
+	"video_upload": {
+    	"upload_bucket_name": "cp-derby-bucket",
+    	"bucket_region": "eu-west-1",
+    	"identity_pool_id": "eu-west-1:8920432b-cc7a-415b-a8aa-c5549432d049",
+    	"s3_upload_startkey": "upload"
+  	}
+}

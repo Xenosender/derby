@@ -1,0 +1,6 @@
+version: 0.1
+
+phases:
+    install:
+        commands:
+        - aws s3 sync upload_page s3://cp-derby-uploadpage --delete
