@@ -4,5 +4,10 @@
     	"bucket_region": "eu-west-1",
     	"identity_pool_id": "eu-west-1:8920432b-cc7a-415b-a8aa-c5549432d049",
     	"s3_upload_startkey": "upload"
-  	}
+  	},
+	"video_split": {
+		"output_bucket": "cp-derby-bucket",
+		"output_key_prefix": "project/{video_name}/split",
+		"output_files_duration_in_sec": 30
+	}
 }
