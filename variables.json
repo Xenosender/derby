@@ -9,5 +9,9 @@
 		"output_bucket": "cp-derby-bucket",
 		"output_key_prefix": "project/{video_name}/split",
 		"output_files_duration_in_sec": 30
+	},
+	"dynamodb": {
+		"region": "eu-west-1",
+		"table_id": "my_derby_project"
 	}
 }
