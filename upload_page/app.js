@@ -7,20 +7,21 @@ var variables;
 var s3;
 
 function loadJSON(callback) {   
-
+    /* function to load a local json file */
     var xobj = new XMLHttpRequest();
-        xobj.overrideMimeType("application/json");
+    xobj.overrideMimeType("application/json");
     xobj.open('GET', 'variables.json', true); // Replace 'my_data' with the path to your file
     xobj.onreadystatechange = function () {
-          if (xobj.readyState == 4 && xobj.status == "200") {
+        if (xobj.readyState == 4 && xobj.status == "200") {
             // Required use of an anonymous callback as .open will NOT return a value but simply returns undefined in asynchronous mode
             callback(xobj.responseText);
-          }
+        }
     };
     xobj.send(null);  
 }
 
 function waitForVariablesLoading(){
+    /* function waiting for "variables" to be loaded, then using them to initialize AWS config and "s3" object */
     if(typeof variables !== "undefined"){
         //variable exists, do what you want
         AWS.config.update({
@@ -42,17 +43,18 @@ function waitForVariablesLoading(){
 
 
 function addVideo() {
+    /* send to AWS the video file picked by the user */
     var files = document.getElementById('videoupload').files;
     if (!files.length) {
         return alert('Please choose a file to upload first.');
     }
     var file = files[0];
     var fileName = file.name;
-    var albumPhotosKey = encodeURIComponent(variables.s3_upload_startkey) + '/';
+    var videoDirectory = encodeURIComponent(variables.s3_upload_startkey) + '/';
 
-    var photoKey = albumPhotosKey + fileName;
+    var videoKey = videoDirectory + fileName;
     s3.upload({
-            Key: photoKey,
+            Key: videoKey,
             Body: file,
             ACL: 'bucket-owner-full-control'
         }, 
@@ -65,9 +67,11 @@ function addVideo() {
     );
 }
 
+// load variables from local file
 loadJSON(function(response) {
   // Parse JSON string into object
     variables = JSON.parse(response);
     variables = variables.video_upload;
  });
+ // initialize connection to AWS
 waitForVariablesLoading()
