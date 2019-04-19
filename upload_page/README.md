@@ -71,3 +71,6 @@ Possible improvements
 - the page is VERY SIMPLE: you can do much to improve the look of it!
 - access to website : if you want a broader access to your page, you can use cloudfront to create a better url or integrate it in your web domain
 - security : access policy to the files of the website should be more fine-grained (public read access to the html page only)
+- info about the upload:
+    - the video should have its name changed to a unique uuid
+    - the corresponding pair should be updated to dynamoDB (or other DB service)
