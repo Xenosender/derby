@@ -1,3 +1,6 @@
+# Author : Cyril Poulet, cyril.poulet@centraliens.net
+# April 2019
+
 import json
 import os
 import tempfile

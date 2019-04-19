@@ -99,3 +99,11 @@ Possible improvements
 We should make sure that this process has not been already done for a given video. This is more or less done by the auto-trigger on new videos uploaded, but it would be cleaner to ask dynamoDB.
 
 We should also check when inserting the document in DynamoDB that there is no primary key conflict
+
+
+
+
+
+
+Author : Cyril Poulet, cyril.poulet@centraliens.net
+April 2019

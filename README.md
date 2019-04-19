@@ -31,3 +31,7 @@ All projects have a deployment script (deploy_to_AWS.sh).
 
 For commodity, and provided that you have setup each subproject, you can use *deploy_all_systems_to_AWS.sh* to call in turn all deployment scripts.
 
+
+
+Author : Cyril Poulet, cyril.poulet@centraliens.net
+April 2019

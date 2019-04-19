@@ -1,7 +1,5 @@
-// var upload_bucket_name = 'cp-derby-bucket';
-// var bucket_region = 'eu-west-1';
-// var identity_pool_id = 'eu-west-1:8920432b-cc7a-415b-a8aa-c5549432d049';
-// var s3_upload_startkey = "upload";
+// Author : Cyril Poulet, cyril.poulet@centraliens.net
+// April 2019
 
 var variables;
 var s3;

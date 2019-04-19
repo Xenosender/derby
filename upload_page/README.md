@@ -74,3 +74,10 @@ Possible improvements
 - info about the upload:
     - the video should have its name changed to a unique uuid
     - the corresponding pair should be updated to dynamoDB (or other DB service)
+    
+    
+
+
+
+Author : Cyril Poulet, cyril.poulet@centraliens.net
+April 2019

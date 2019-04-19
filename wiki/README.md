@@ -17,3 +17,9 @@ In the directory, activate pipenv shell, then ./launch_wiki.sh.
 
 It will launch the server and open the page on your browser.
 
+
+
+
+
+Author : Cyril Poulet, cyril.poulet@centraliens.net
+April 2019
