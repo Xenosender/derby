@@ -100,6 +100,7 @@ We should make sure that this process has not been already done for a given vide
 
 We should also check when inserting the document in DynamoDB that there is no primary key conflict
 
+Finally, information about the process could be stored for batch analysis.
 
 
 
