@@ -1,4 +1,9 @@
 {
+	"process_steps": ["upload", "human_detection", "team_detector"],
+	"aws_queues": {
+		"human_detection": "derby-call-humandetector",
+		"team_detection": "derby-call-teamdetector"
+	},
 	"video_upload": {
     	"upload_bucket_name": "cp-derby-bucket",
     	"bucket_region": "eu-west-1",
