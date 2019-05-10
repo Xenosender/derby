@@ -17,19 +17,24 @@ import cv2
 import logging
 import sys
 
-from human_detector import HumanDetector
+from detector import DetectorFactory
 
 logging.basicConfig(stream=sys.stdout,
                     level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 
-class VideoAnalyzer:
+class VideoAnalyzer(object):
 
     def __init__(self, frame_ratio=1.):
         self._logger = logging.getLogger("VideoAnalyzer")
         self._logger.info("Creating Video Analyzer")
-        self._detector = HumanDetector()
+        self._detectors_names = ["HumanDetector"]
+        self._detectors = []
+        for n in self._detectors_names:
+            self._logger.info('Instantiating detector {}'.format(n))
+            self._detectors.append(DetectorFactory.get_detector(n)())
+
         self._analysis_ratio = frame_ratio
 
     def analyze_video(self, path_to_video):
@@ -41,6 +46,7 @@ class VideoAnalyzer:
         vid_codec_code = cap.get(cv2.CAP_PROP_FOURCC)
         self._logger.info("Detected codec and FPS: {}, {}".format(vid_codec_code, vid_fps))
 
+        max_batch_size = min([c.batch_max_size for c in self._detectors])
         current_frame_ind = 0
         input_timestamps = []
         input_images = []
@@ -66,25 +72,35 @@ class VideoAnalyzer:
             if (current_frame_ind - 1) % one_frame_every_n_frame != 0:
                 continue
 
-            if len(input_images) < self._detector.batch_max_size:
+            if len(input_images) < max_batch_size:
                 input_images.append(img)
                 input_timestamps.append((current_frame_ind, cap.get(cv2.CAP_PROP_POS_MSEC)))
 
-            if len(input_images) == self._detector.batch_max_size:
-                det_results = self._detector.analyze_images(input_images)
-                batch_results = process_results(input_timestamps, {self._detector.detected_category: det_results})
+            if len(input_images) == max_batch_size:
+                detection_results = {}
+                for det in self._detectors:
+                    det_results = det.analyze_images(input_images)
+                    detection_results[det.detected_category] = det_results
+                batch_results = process_results(input_timestamps, detection_results)
                 frame_results.extend(batch_results)
                 input_images = []
                 input_timestamps = []
 
-        det_results = self._detector.analyze_images(input_images)
-        batch_results = process_results(input_timestamps, {self._detector.detected_category: det_results})
+        detection_results = {}
+        for det in self._detectors:
+            det_results = det.analyze_images(input_images)
+            detection_results[det.detected_category] = det_results
+        batch_results = process_results(input_timestamps, detection_results)
         frame_results.extend(batch_results)
 
         cap.release()
         self._logger.info("Analyzed {} images".format(len(frame_results)))
 
         return {"fps": vid_fps, "codec_code": vid_codec_code, "frames": frame_results}
+
+    def close(self):
+        self._logger.info("Closing all detectors")
+        [c.close() for c in self._detectors]
 
 
 if __name__ == "__main__":
@@ -96,3 +112,5 @@ if __name__ == "__main__":
     results = analyzer.analyze_video(test_video)
     with open('test.json', 'w') as f:
         json.dump(results, f)
+
+    analyzer.close()
