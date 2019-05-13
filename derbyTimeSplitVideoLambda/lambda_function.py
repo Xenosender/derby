@@ -22,6 +22,8 @@ import math
 import random
 import decimal
 import boto3
+
+os.environ["IMAGEIO_FFMPEG_EXE"] = os.path.join(os.getcwd(), 'ffmpeg')
 from moviepy.editor import VideoFileClip
 
 
@@ -149,7 +151,7 @@ def transfer_and_split_in_sequences(input_s3_bucket, input_file_key, output_s3_b
     video_object = VideoFileClip(temp_file.name)
     upload_video_information = {
         "VideoId": generate_row_id(),
-        "process_step": "upload",
+        "process_steps": [{"step": "upload", "state": "processing"}],
         "creation_time": datetime.datetime.now().isoformat(),
         "bucket": input_s3_bucket,
         "key": input_file_key,
@@ -178,7 +180,7 @@ def transfer_and_split_in_sequences(input_s3_bucket, input_file_key, output_s3_b
 
         subvideo_information = {
             "VideoId": generate_row_id(),
-            "process_step": "timesplit",
+            "process_steps": [{"step": "timesplit", "state": "done"}],
             "creation_time": datetime.datetime.now().isoformat(),
             "bucket": output_s3_bucket,
             "key": output_key,
@@ -197,6 +199,7 @@ def transfer_and_split_in_sequences(input_s3_bucket, input_file_key, output_s3_b
         current_index += 1
         current_start += subvid_duration_in_sec
 
+    upload_video_information["process_steps"][0]["state"] = "done"
     send_video_info_to_dynamo_db(dynamodb_region_id, dynamodb_tableId, upload_video_information)
     # clean
     os.remove(temp_file.name)
@@ -215,6 +218,10 @@ def lambda_handler(event, context):
     :param context: trigger context (json)
     :return: dict
     """
+    print(os.environ["IMAGEIO_FFMPEG_EXE"])
+    print(os.listdir(os.getcwd()))
+
+
     print("Incoming Event: ", event)
     input_bucket = event['Records'][0]['s3']['bucket']['name']
     input_key = event['Records'][0]['s3']['object']['key']
@@ -250,50 +257,50 @@ def lambda_handler(event, context):
     return return_dict
 
 
-if __name__ == "__main__":
-
-    with open("variables.json") as f:
-        params = json.load(f)
-
-    test_key = "upload/public_3.mp4"
-
-    test_event = {
-        "Records": [
-            {
-                "eventVersion": "2.0",
-                "eventSource": "aws:s3",
-                "awsRegion": "eu-west-1",
-                "eventTime": "1970-01-01T00:00:00.000Z",
-                "eventName": "ObjectCreated:Put",
-                "userIdentity": {
-                    "principalId": "EXAMPLE"
-                },
-                "requestParameters": {
-                    "sourceIPAddress": "127.0.0.1"
-                },
-                "responseElements": {
-                    "x-amz-request-id": "EXAMPLE123456789",
-                    "x-amz-id-2": "EXAMPLE123/5678abcdefghijklambdaisawesome/mnopqrstuvwxyzABCDEFGH"
-                },
-                "s3": {
-                    "s3SchemaVersion": "1.0",
-                    "configurationId": "testConfigRule",
-                    "bucket": {
-                        "name": params["video_upload"]["upload_bucket_name"],
-                        "ownerIdentity": {
-                            "principalId": "EXAMPLE"
-                        },
-                        "arn": "arn:aws:s3:::{}".format(params["video_upload"]["upload_bucket_name"])
-                    },
-                    "object": {
-                        "key": test_key,
-                        "size": 1024,
-                        "eTag": "0123456789abcdef0123456789abcdef",
-                        "sequencer": "0A1B2C3D4E5F678901"
-                    }
-                }
-            }
-        ]
-    }
-
-    lambda_handler(test_event, None)
+# if __name__ == "__main__":
+#
+#     with open("variables.json") as f:
+#         params = json.load(f)
+#
+#     test_key = "upload/public_3.mp4"
+#
+#     test_event = {
+#         "Records": [
+#             {
+#                 "eventVersion": "2.0",
+#                 "eventSource": "aws:s3",
+#                 "awsRegion": "eu-west-1",
+#                 "eventTime": "1970-01-01T00:00:00.000Z",
+#                 "eventName": "ObjectCreated:Put",
+#                 "userIdentity": {
+#                     "principalId": "EXAMPLE"
+#                 },
+#                 "requestParameters": {
+#                     "sourceIPAddress": "127.0.0.1"
+#                 },
+#                 "responseElements": {
+#                     "x-amz-request-id": "EXAMPLE123456789",
+#                     "x-amz-id-2": "EXAMPLE123/5678abcdefghijklambdaisawesome/mnopqrstuvwxyzABCDEFGH"
+#                 },
+#                 "s3": {
+#                     "s3SchemaVersion": "1.0",
+#                     "configurationId": "testConfigRule",
+#                     "bucket": {
+#                         "name": params["video_upload"]["upload_bucket_name"],
+#                         "ownerIdentity": {
+#                             "principalId": "EXAMPLE"
+#                         },
+#                         "arn": "arn:aws:s3:::{}".format(params["video_upload"]["upload_bucket_name"])
+#                     },
+#                     "object": {
+#                         "key": test_key,
+#                         "size": 1024,
+#                         "eTag": "0123456789abcdef0123456789abcdef",
+#                         "sequencer": "0A1B2C3D4E5F678901"
+#                     }
+#                 }
+#             }
+#         ]
+#     }
+#
+#     lambda_handler(test_event, None)
