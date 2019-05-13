@@ -59,7 +59,8 @@ class VideoAnalyzer(object):
                     "frame_index": f_ind,
                     "frame_timestamp": f_tsp
                 }
-                im_res.update(results_dict)
+                for key in results_dict:
+                    im_res[key] = results_dict[key][i]
                 results.append(im_res)
             return results
 
