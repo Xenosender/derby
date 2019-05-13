@@ -1,5 +1,5 @@
 {
-	"process_steps": ["upload", "human_detection", "team_detector"],
+	"process_steps": ["upload", "timesplit", "human_detection", "team_detector"],
 	"aws_queues": {
 		"human_detection": "derby-call-humandetector",
 		"team_detection": "derby-call-teamdetector"

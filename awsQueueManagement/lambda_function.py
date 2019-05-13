@@ -16,11 +16,13 @@
 import boto3
 import json
 
-with open("variables.json") as f:
-    params = json.load(f)
-
 
 def lambda_handler(event, context):
+    print(event)
+
+    with open("variables.json") as f:
+        params = json.load(f)
+
     sqs = boto3.resource('sqs')
 
     #check that queues exists, create those that don't
@@ -46,11 +48,17 @@ def lambda_handler(event, context):
             print("Ignoring videoId {} because not in the 'project' directory".format(videoId))
             continue
 
-        current_process_step = updated_values["process_step"]["S"]
+        current_process_step = updated_values["process_steps"]["L"][-1]["M"]
+        step_name = current_process_step["step"]["S"]
+        step_status = current_process_step["state"]["S"]
         try:
-            current_process_step_ind = params["process_steps"].index(current_process_step)
+            current_process_step_ind = params["process_steps"].index(step_name)
         except ValueError as e:
-            print('Process step not found : {}'.format(current_process_step))
+            print('Process step not found : {}'.format(step_name))
+            continue
+
+        if step_status.lower() != "done":
+            print('Found state for step {} is not "done". skipping'.format(step_name))
             continue
 
         if current_process_step == len(params["process_steps"]) - 1:
@@ -71,131 +79,144 @@ def lambda_handler(event, context):
         print("sending {} to {}".format(message_body, target_queue_name))
 
 
-if __name__ == "__main__":
-
-    with open("variables.json") as f:
-        params = json.load(f)
-
-    test_event = {
-      "Records": [
-        {
-          "eventID": "5d451b30988a1506157a9a710bd26446",
-          "eventName": "MODIFY",
-          "eventVersion": "1.1",
-          "eventSource": "aws:dynamodb",
-          "awsRegion": "eu-west-1",
-          "dynamodb": {
-            "ApproximateCreationDateTime": 1557504563,
-            "Keys": {
-              "VideoId": {
-                "N": "-42547415307778220"
-              }
-            },
-            "NewImage": {
-              "bucket": {
-                "S": "cp-derby-bucket"
-              },
-              "creation_time": {
-                "S": "2019-04-22T10:34:20.909635"
-              },
-              "duration": {
-                "N": "11.31"
-              },
-              "extension": {
-                "S": "mp4"
-              },
-              "VideoId": {
-                "N": "-42547415309978380"
-              },
-              "size": {
-                "L": [
-                  {
-                    "N": "960"
-                  },
-                  {
-                    "N": "540"
-                  }
-                ]
-              },
-              "fps": {
-                "N": "30"
-              },
-              "name": {
-                "S": "public_3"
-              },
-              "audio": {
-                "BOOL": False
-              },
-              "process_step": {
-                "S": "upload"
-              },
-              "sub_videos": {
-                "L": [
-                  {
-                    "N": "-42547415307778220"
-                  }
-                ]
-              },
-              "key": {
-                "S": "project/public_3/split/public_3_0.mp4"
-              }
-            },
-            "OldImage": {
-              "bucket": {
-                "S": "cp-derby-bucket"
-              },
-              "creation_time": {
-                "S": "2019-04-22T10:34:20.909635"
-              },
-              "duration": {
-                "N": "11.31"
-              },
-              "extension": {
-                "S": "mp4"
-              },
-              "VideoId": {
-                "N": "-42547415309978380"
-              },
-              "size": {
-                "L": [
-                  {
-                    "N": "960"
-                  },
-                  {
-                    "N": "540"
-                  }
-                ]
-              },
-              "fps": {
-                "N": "30"
-              },
-              "name": {
-                "S": "public_3"
-              },
-              "audio": {
-                "BOOL": True
-              },
-              "process_step": {
-                "S": "upload"
-              },
-              "sub_videos": {
-                "L": [
-                  {
-                    "N": "-42547415307778220"
-                  }
-                ]
-              },
-              "key": {
-                "S": "upload/public_3.mp4"
-              }
-            },
-            "SequenceNumber": "95331000000000006078371714",
-            "SizeBytes": 426,
-            "StreamViewType": "NEW_AND_OLD_IMAGES"
-          },
-          "eventSourceARN": "arn:aws:dynamodb:eu-west-1:262436596026:table/my_derby_project/stream/2019-05-10T15:59:08.265"
-        }
-      ]
-    }
-
-    lambda_handler(test_event, None)
+# if __name__ == "__main__":
+#
+#     with open("variables.json") as f:
+#         params = json.load(f)
+#
+#     test_event = {
+#         "Records": [
+#             {
+#                 "eventID": "f537de3f871d5a99533630503b72e77c",
+#                 "eventName": "MODIFY",
+#                 "eventVersion": "1.1",
+#                 "eventSource": "aws:dynamodb",
+#                 "awsRegion": "eu-west-1",
+#                 "dynamodb": {
+#                     "ApproximateCreationDateTime": 1557769415.0,
+#                     "Keys": {
+#                         "VideoId": {
+#                             "N": "-42547355050985230"
+#                         }
+#                     },
+#                     "NewImage": {
+#                         "bucket": {
+#                             "S": "cp-derby-bucket"
+#                         },
+#                         "creation_time": {
+#                             "S": "2019-05-13T17:23:39.443548"
+#                         },
+#                         "duration": {
+#                             "N": "30"
+#                         },
+#                         "extension": {
+#                             "S": "mp4"
+#                         },
+#                         "parent_video": {
+#                             "N": "-42547355053242230"
+#                         },
+#                         "VideoId": {
+#                             "N": "-42547355050985230"
+#                         },
+#                         "size": {
+#                             "L": [
+#                                 {
+#                                     "N": "640"
+#                                 },
+#                                 {
+#                                     "N": "360"
+#                                 }
+#                             ]
+#                         },
+#                         "fps": {
+#                             "N": "30"
+#                         },
+#                         "name": {
+#                             "S": "derby_testmatch_1_firstjam_0.mp4"
+#                         },
+#                         "audio": {
+#                             "BOOL": True
+#                         },
+#                         "key": {
+#                             "S": "project/derby_testmatch_1_firstjam/split/derby_testmatch_1_firstjam_0.mp4"
+#                         },
+#                         "process_steps": {
+#                             "L": [
+#                                 {
+#                                     "M": {
+#                                         "step": {
+#                                             "S": "timesplit"
+#                                         },
+#                                         "state": {
+#                                             "S": "done"
+#                                         }
+#                                     }
+#                                 }
+#                             ]
+#                         }
+#                     },
+#                     "OldImage": {
+#                         "bucket": {
+#                             "S": "cp-derby-bucket"
+#                         },
+#                         "creation_time": {
+#                             "S": "2019-05-13T17:23:39.443548"
+#                         },
+#                         "duration": {
+#                             "N": "30"
+#                         },
+#                         "extension": {
+#                             "S": "mp4"
+#                         },
+#                         "parent_video": {
+#                             "N": "-42547355053242230"
+#                         },
+#                         "VideoId": {
+#                             "N": "-42547355050985230"
+#                         },
+#                         "size": {
+#                             "L": [
+#                                 {
+#                                     "N": "640"
+#                                 },
+#                                 {
+#                                     "N": "360"
+#                                 }
+#                             ]
+#                         },
+#                         "fps": {
+#                             "N": "30"
+#                         },
+#                         "name": {
+#                             "S": "derby_testmatch_1_firstjam_0.mp4"
+#                         },
+#                         "audio": {
+#                             "BOOL": True
+#                         },
+#                         "key": {
+#                             "S": "project/derby_testmatch_1_firstjam/split/derby_testmatch_1_firstjam_0.mp4"
+#                         },
+#                         "process_steps": {
+#                             "L": [
+#                                 {
+#                                     "M": {
+#                                         "step": {
+#                                             "S": "timesplit"
+#                                         },
+#                                         "state": {
+#                                             "S": "done"
+#                                         }
+#                                     }
+#                                 }
+#                             ]
+#                         }
+#                     },
+#                     "SequenceNumber": "109139700000000006052830023",
+#                     "SizeBytes": 628,
+#                     "StreamViewType": "NEW_AND_OLD_IMAGES"
+#                 },
+#                 "eventSourceARN": "arn:aws:dynamodb:eu-west-1:262436596026:table/my_derby_project/stream/2019-05-10T15:59:08.265"
+#             }
+#         ]
+#     }
+#     lambda_handler(test_event, None)
