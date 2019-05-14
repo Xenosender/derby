@@ -12,7 +12,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
+import json
+import decimal
 from tensorflow.python.client import device_lib
 
 
@@ -28,3 +29,14 @@ def camelcase_to_underscores(str_val):
             str_val = str_val[:i] + '_' + str_val[i].lower() + str_val[i+1:]
     str_val = str_val[:-1] + str_val[-1].lower()
     return str_val
+
+
+# Helper class to convert a DynamoDB item to JSON.
+class DecimalDecoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, decimal.Decimal):
+            if abs(o) % 1 > 0:
+                return float(o)
+            else:
+                return int(o)
+        return super(DecimalDecoder, self).default(o)
