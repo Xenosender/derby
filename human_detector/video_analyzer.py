@@ -26,16 +26,21 @@ logging.basicConfig(stream=sys.stdout,
 
 class VideoAnalyzer(object):
 
-    def __init__(self, frame_ratio=1.):
+    def __init__(self, detectors=None, frame_ratio=1.):
+        if detectors is None:
+            detectors = [("HumanDetector", {})]
+
         self._logger = logging.getLogger("VideoAnalyzer")
         self._logger.info("Creating Video Analyzer")
-        self._detectors_names = ["HumanDetector"]
+        self._detectors_names = []
         self._detectors = []
-        for n in self._detectors_names:
-            self._logger.info('Instantiating detector {}'.format(n))
-            self._detectors.append(DetectorFactory.get_detector(n)())
 
-        self._analysis_ratio = frame_ratio
+        for key, vals in detectors:
+            self._logger.info('Instantiating detector {}'.format(key))
+            self._detectors_names.append(key)
+            self._detectors.append(DetectorFactory.get_detector(key)(**vals))
+
+        self._analysis_ratio = float(frame_ratio)
 
     def analyze_video(self, path_to_video):
         one_frame_every_n_frame = int(1./self._analysis_ratio)
@@ -88,11 +93,12 @@ class VideoAnalyzer(object):
                 input_timestamps = []
 
         detection_results = {}
-        for det in self._detectors:
-            det_results = det.analyze_images(input_images)
-            detection_results[det.detected_category] = det_results
-        batch_results = process_results(input_timestamps, detection_results)
-        frame_results.extend(batch_results)
+        if input_images:
+            for det in self._detectors:
+                det_results = det.analyze_images(input_images)
+                detection_results[det.detected_category] = det_results
+            batch_results = process_results(input_timestamps, detection_results)
+            frame_results.extend(batch_results)
 
         cap.release()
         self._logger.info("Analyzed {} images".format(len(frame_results)))
@@ -106,10 +112,12 @@ class VideoAnalyzer(object):
 
 if __name__ == "__main__":
     import json
+    with open('variables.json') as f:
+        params = json.load(f)
 
     test_video = "example/derby_testmatch_1_firstjam.mp4"
 
-    analyzer = VideoAnalyzer(0.1)
+    analyzer = VideoAnalyzer(**params["human_detection"])
     results = analyzer.analyze_video(test_video)
     with open('test.json', 'w') as f:
         json.dump(results, f)
