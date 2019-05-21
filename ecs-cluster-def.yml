@@ -3,6 +3,14 @@ Description: EC2 ECS cluster running containers in a public subnet. Only support
              public facing load balancer, and public service discovery namespaces.
              Adapted from https://github.com/brentley/tensorflow-container/blob/master/cluster-cpu-gpu.yml
 Parameters:
+  DynamoDBTable:
+    Description: name of the dynamoDB table used in the project
+    Type: String
+    Default: my_derby_project
+  S3Bucket:
+    Description: name of the s3 bucket used in the project
+    Type: String
+    Default: cp-derby-bucket
   KeyName:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
     Type: AWS::EC2::KeyPair::KeyName
@@ -53,7 +61,7 @@ Parameters:
   ECSGPUAMI:
     Description: GPU AMI ID
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
-    Default: /aws/service/ecs/optimized-ami/amazon-linux-2/gpu/recommended/image_id
+    Default: /aws/service/ecs/optimized-ami/amazon-linux-2/gpu/recommended/image_id #amzn2-ami-ecs-gpu-hvm-2.0.20190321-x86_64-ebs/image_id
     Description: The Amazon Machine Image ID used for the gpu instances, leave it as the default value to get the latest AMI
 
 Mappings:
@@ -206,14 +214,6 @@ Resources:
       InstanceType: !Ref 'GPUInstanceType'
       IamInstanceProfile: !Ref 'GPUEC2InstanceProfile'
       KeyName: !Ref 'KeyName'
-#      UserData:
-#        Fn::Base64: !Sub |
-#          #!/bin/bash -xe
-#          sudo mkdir /etc/ecs/
-#          sudo chmod 777 /etc/ecs/
-#          sudo echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config
-#          sudo yum install -y aws-cfn-bootstrap
-#          sudo /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ECSGPUAutoScalingGroup --region ${AWS::Region}
       UserData: !Base64
         'Fn::Join':
           - ''
@@ -348,32 +348,65 @@ Resources:
               - 'elasticloadbalancing:RegisterTargets'
             Resource: '*'
   # This is a role which is used by the ECS tasks themselves.
-#  ECSTaskExecutionRole:
-#    Type: AWS::IAM::Role
-#    Properties:
-#      AssumeRolePolicyDocument:
-#        Statement:
-#        - Effect: Allow
-#          Principal:
-#            Service: [ecs-tasks.amazonaws.com]
-#          Action: ['sts:AssumeRole']
-#      Path: /
-#      Policies:
-#        - PolicyName: AmazonECSTaskExecutionRolePolicy
-#          PolicyDocument:
-#            Statement:
-#            - Effect: Allow
-#              Action:
-#                # Allow the ECS Tasks to download images from ECR
-#                - 'ecr:GetAuthorizationToken'
-#                - 'ecr:BatchCheckLayerAvailability'
-#                - 'ecr:GetDownloadUrlForLayer'
-#                - 'ecr:BatchGetImage'
-#
-#                # Allow the ECS tasks to upload logs to CloudWatch
-#                - 'logs:CreateLogStream'
-#                - 'logs:PutLogEvents'
-#              Resource: '*'
+  ECSTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: [ecs-tasks.amazonaws.com]
+          Action: ['sts:AssumeRole']
+      Path: /
+      Policies:
+        - PolicyName: AmazonECSTaskExecutionRolePolicy
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+                # Allow the ECS Tasks to download images from ECR
+                - 'ecr:GetAuthorizationToken'
+                - 'ecr:BatchCheckLayerAvailability'
+                - 'ecr:GetDownloadUrlForLayer'
+                - 'ecr:BatchGetImage'
+
+                # Allow the ECS tasks to upload logs to CloudWatch
+                - 'logs:CreateLogStream'
+                - 'logs:PutLogEvents'
+              Resource: '*'
+        - PolicyName: dynamoDBAccessDerbyRW
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+                - "dynamodb:PutItem"
+                - "dynamodb:GetItem"
+              Resource: !Sub
+                - arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TableId}
+                - { TableId: !Ref 'DynamoDBTable' }
+        - PolicyName: s3AccessDerbyRW
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+                - "s3:PutObject"
+                - "s3:GetObject"
+                - "s3:GetObjectVersionTagging"
+                - "s3:GetObjectVersion"
+              Resource: !Sub
+                - arn:aws:s3:::${BucketId}/*
+                - { BucketId: !Ref 'S3Bucket' }
+        - PolicyName: sqsAccessDerbyRW
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+                - "sqs:DeleteMessage"
+                - "sqs:ListQueues"
+                - "sqs:GetQueueUrl"
+                - "sqs:ReceiveMessage"
+                - "sqs:GetQueueAttributes"
+              Resource: "*"
 
 # These are the values output by the CloudFormation template. Be careful
 # about changing any of them, because of them are exported with specific
@@ -394,11 +427,11 @@ Outputs:
     Value: !GetAtt 'ECSRole.Arn'
     Export:
       Name: !Sub ${EnvironmentName}:ECSRole
-#  ECSTaskExecutionRole:
-#    Description: The ARN of the ECS role
-#    Value: !GetAtt 'ECSTaskExecutionRole.Arn'
-#    Export:
-#      Name: !Sub ${EnvironmentName}:ECSTaskExecutionRole
+  ECSTaskExecutionRole:
+    Description: The ARN of the ECS role
+    Value: !GetAtt 'ECSTaskExecutionRole.Arn'
+    Export:
+      Name: !Sub ${EnvironmentName}:ECSTaskExecutionRole
   VpcId:
     Description: The ID of the VPC that this stack is deployed in
     Value: !Ref 'VPC'
