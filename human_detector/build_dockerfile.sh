@@ -10,7 +10,7 @@ original_variables_files=$(readlink -f src/variables.json)
 rm src/variables.json
 cp $original_variables_files src/variables.json
 
-docker build -t ${image_name} .
+docker build -t ${image_name}:latest .
 
 rm src/variables.json
 ln -s $original_variables_files src/variables.json
