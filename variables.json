@@ -18,7 +18,8 @@
 	},
 	"human_detection": {
 		"detectors": [
-                ["HumanDetector", {"min_detection_score": 0.4, "max_batch_size": 5}]
+			["HumanDetector", {"min_detection_score": 0.4, "max_batch_size": 5}],
+			["FaceDetector", {"min_detection_score": 0.4, "max_batch_size": 5}]
 		],
 		"frame_ratio": 0.2
 	},
