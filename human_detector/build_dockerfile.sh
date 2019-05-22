@@ -2,16 +2,15 @@
 
 image_name=$1
 if [[ -z "$image_name" ]]; then
-echo "hop"
     image_name="derby/human_detector"
 fi
 
-original_variables_files=$(readlink -f variables.json)
+original_variables_files=$(readlink -f src/variables.json)
 
-rm variables.json
-cp $original_variables_files variables.json
+rm src/variables.json
+cp $original_variables_files src/variables.json
 
 docker build -t ${image_name} .
 
-rm variables.json
-ln -s ../variables.json variables.json
+rm src/variables.json
+ln -s $original_variables_files src/variables.json

@@ -1,6 +1,6 @@
-example/*
-model/*
-!model/*.sh
+src/example/*
+src/model/*
+!src/model/*.sh
 Dockerfile
 .dockerignore
 .gitignore

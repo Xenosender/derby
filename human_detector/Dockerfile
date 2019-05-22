@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y \
     libxext6
 
 RUN mkdir /src
-COPY . /src/
+COPY src/ /src/
 RUN cd /src && pip3 install -r requirements.txt
 RUN cd /src/model && ./download_all_models.sh
 
