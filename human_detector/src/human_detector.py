@@ -205,13 +205,20 @@ class HumanDetector(Detector):
         :return: same as input
         """
         # filter on class
-        _, humans_boxes, humans_scores = zip(*[triplet for triplet in zip(results["classes"], results["boxes"], results["scores"]) if triplet[0] == self._output_ind_for_humans])
+        humans_boxes, humans_scores = [], []
+        filtered_tuples = [triplet for triplet in zip(results["classes"], results["boxes"], results["scores"]) if triplet[0] == self._output_ind_for_humans]
+        if len(filtered_tuples):
+            _, humans_boxes, humans_scores = zip(*filtered_tuples)
+
         # filter on score
-        correct_humans_boxes, correct_humans_scores = zip(*[vals for vals in zip(humans_boxes, humans_scores) if vals[1] >= self._min_detection_score])
+        correct_humans_boxes, correct_humans_scores = [], []
+        filtered_tuples = [vals for vals in zip(humans_boxes, humans_scores) if vals[1] >= self._min_detection_score]
+        if len(filtered_tuples):
+            correct_humans_boxes, correct_humans_scores = zip(*filtered_tuples)
 
         return {"classes": [self._output_ind_for_humans for _ in correct_humans_scores],
-                "boxes": correct_humans_boxes,
-                "scores": correct_humans_scores}
+                "boxes": list(correct_humans_boxes),
+                "scores": list(correct_humans_scores)}
 
 
 if __name__ == "__main__":
