@@ -13,7 +13,7 @@ aws_ecr_configfile="aws_ecr_conf.json"
 
 # build image
 if [[ ${BUILD} == 1 ]]; then
-    build_dockerfile.sh ${docker_tag}
+    ./build_dockerfile.sh ${docker_tag}
 fi
 
 
