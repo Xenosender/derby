@@ -14,7 +14,7 @@ from video_analyzer import VideoAnalyzer
 # S3 functions
 ###############
 
-def get_object_from_s3(bucket_name, key, local_filename):
+def get_object_from_s3(region_id, bucket_name, key, local_filename):
     """
     download file from s3 to local file. You must have access rights
 
@@ -23,21 +23,16 @@ def get_object_from_s3(bucket_name, key, local_filename):
     :param local_filename: path to file to write
     :return: None
     """
-    print("getting file {} from bucket {}".format(key, bucket_name))
-    s3 = boto3.resource('s3')
-
+    s3 = boto3.resource('s3', region_name=region_id)
     try:
-        s3.Bucket(bucket_name).download_file(key, local_filename)
-        print("file received")
+        res = s3.Bucket(bucket_name).download_file(key, local_filename)
     except Exception as e:
-        print(e)
-        if e.response['Error']['Code'] == "404":
-            print("The object does not exist.")
-        else:
-            raise e
+        if hasattr(e, "message"):
+            e.message = "S3 : " + e.message
+        raise e
 
 
-def put_object_to_s3(local_filename, bucket_name, key):
+def put_object_to_s3(region_id, local_filename, bucket_name, key):
     """
     upload file to s3 from local file. You must have access rights
 
@@ -46,13 +41,12 @@ def put_object_to_s3(local_filename, bucket_name, key):
     :param key: key of the file to write in the bucket
     :return: None
     """
-    print("uploading file {} to bucket {}".format(key, bucket_name))
-    s3 = boto3.client('s3')
-
+    s3 = boto3.client('s3', region_name=region_id)
     try:
         s3.upload_file(local_filename, bucket_name, key)
-        print("file uploaded")
     except Exception as e:
+        if hasattr(e, "message"):
+            e.message = "S3 : " + e.message
         raise e
 
 
@@ -77,7 +71,11 @@ def get_video_info_from_dynamo_db(region_id, tableId, search_keys):
     try:
         return json.loads(json.dumps(response["Item"], indent=4, cls=DecimalDecoder))
     except KeyError:
-        raise Exception('Could not find document in dynamoDB with request {}'.format(search_keys))
+        raise Exception('DynamoDB : Could not find document in dynamoDB with request {}'.format(search_keys))
+    except Exception as e:
+        if hasattr(e, "message"):
+            e.message = "DynamoDB : " + e.message
+        raise e
 
 
 def send_video_info_to_dynamo_db(region_id, tableId, document):
@@ -92,18 +90,23 @@ def send_video_info_to_dynamo_db(region_id, tableId, document):
     dynamodb = boto3.resource('dynamodb', region_name=region_id) #, endpoint_url="http://localhost:8000")
     table = dynamodb.Table(tableId)
     # trick to turn floats and ints to Decimal for DynamoDB
-    response = table.put_item(Item=json.loads(json.dumps(document), parse_float=decimal.Decimal))
-    return response
+    try:
+        response = table.put_item(Item=json.loads(json.dumps(document), parse_float=decimal.Decimal))
+        return response
+    except Exception as e:
+        if hasattr(e, "message"):
+            e.message = "DynamoDB : " + e.message
+        raise e
 
 
 def process_video(step_name,
                   video_id, video_analyzer,
-                  video_s3_bucket, video_s3_key,
+                  video_s3_region_id, video_s3_bucket, video_s3_key,
                   dyndb_region_id, dyndb_tableId,
                   logger):
 
     # get doc from dynamodb
-    logger.debug("Getting doc from dynamoDB")
+    logger.info("Getting doc from dynamoDB")
     video_doc = get_video_info_from_dynamo_db(dyndb_region_id, dyndb_tableId, {"VideoId": int(video_id)})
     video_doc["process_steps"].append({"step": step_name, "state": "running"})
     send_video_info_to_dynamo_db(dyndb_region_id, dyndb_tableId, video_doc)
@@ -112,13 +115,13 @@ def process_video(step_name,
     results_temp_file = tempfile.NamedTemporaryFile(delete=False)
     try:
         # get video from s3
-        logger.debug("Getting video from S3: {}/{}".format(video_s3_bucket, video_s3_key))
-        get_object_from_s3(video_s3_bucket, video_s3_key, video_temp_file.name)
+        logger.info("Getting video from S3: {}/{}".format(video_s3_bucket, video_s3_key))
+        get_object_from_s3(video_s3_region_id, video_s3_bucket, video_s3_key, video_temp_file.name)
         video_name = os.path.basename(video_s3_key)
         video_name = video_name[:video_name.rfind('.')]
 
         # analyze video
-        logger.debug("Analyzing video")
+        logger.info("Analyzing video")
         results = video_analyzer.analyze_video(video_temp_file.name)
         with open(results_temp_file.name, 'w') as f:
             json.dump(results, f)
@@ -126,11 +129,11 @@ def process_video(step_name,
         # push result to s3
         video_key_path = os.path.dirname(video_s3_key)  # this is project_name/split
         result_key = os.path.join(os.path.dirname(video_key_path), step_name, video_name + '.json')
-        logger.debug("Pushing results to s3 : {}/{}".format(video_s3_bucket, result_key))
-        put_object_to_s3(results_temp_file.name, video_s3_bucket, result_key)
+        logger.info("Pushing results to s3 : {}/{}".format(video_s3_bucket, result_key))
+        put_object_to_s3(video_s3_region_id, results_temp_file.name, video_s3_bucket, result_key)
 
         # update dynamoDB document
-        logger.debug("Updating doc on dynamoDB")
+        logger.info("Updating doc on dynamoDB")
         for i in range(len(video_doc["process_steps"])):
             if video_doc["process_steps"][i]["step"] == step_name:
                 video_doc["process_steps"][i]["state"] = "done"
@@ -171,7 +174,7 @@ if __name__ == "__main__":
     logger.info("Starting up. Connecting to SQS queue {}".format(sqs_queue_name))
     sqs_queue = None
     try:
-        sqs = boto3.resource('sqs')
+        sqs = boto3.resource('sqs', region_name=params["aws_region"])
         sqs_queue = sqs.get_queue_by_name(QueueName=sqs_queue_name)
         logger.info("Connected to SQS")
     except Exception as e:
@@ -202,8 +205,9 @@ if __name__ == "__main__":
                 video_id = message_body["VideoId"]
                 video_file = message_body["s3"]
 
-                process_video(video_id, video_analyzer,
-                              video_file["bucket"], video_file["key"],
+                process_video(current_detector,
+                              video_id, video_analyzer,
+                              params["aws_region"],  video_file["bucket"], video_file["key"],
                               params["dynamodb"]["region"], params["dynamodb"]["table_id"],
                               logger)
             except Exception as e:

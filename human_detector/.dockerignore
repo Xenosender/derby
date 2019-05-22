@@ -6,3 +6,4 @@ Dockerfile
 .gitignore
 build_dockerfile.sh
 run_docker_local.sh
+aws_ecr_conf.json

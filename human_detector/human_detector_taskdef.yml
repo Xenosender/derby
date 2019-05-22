@@ -1,0 +1,54 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: task definition for the human detector task
+
+Parameters:
+  TaskName:
+    Description: name of the task
+    Type: String
+    Default: derbyHumanDetectionTask
+  DockerImageName:
+    Description: name of the docker image to use
+    Type: String
+    Default: derby/human_detector
+  ExecutionRole:
+    Description: name of the execution role to assume
+    Type: String
+    Default: derbyEcsTaskExecutionRole
+  InstanceType:
+    Description: ec2 instance type to deploy on
+    Type: String
+    Default: p2.xlarge
+  LoggingName:
+    Description: where to log in cloudfront
+    Type: String
+    Default: derby-human-detection
+
+Resources:
+  ECSTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Ref 'TaskName'
+      RequiresCompatibilities:
+        - "EC2"
+      ExecutionRoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/${ExecutionRole}
+      TaskRoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/${ExecutionRole}
+      PlacementConstraints:
+        - Expression: !Sub attribute:ecs.instance-type == ${InstanceType}
+          Type: memberOf
+      Cpu: 2048
+      Memory: 2048
+      ContainerDefinitions:
+        -
+          Name: !Ref "TaskName"
+          Essential: True
+          Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${DockerImageName}:latest
+          ResourceRequirements:
+            - Type: "GPU"
+              Value: 1
+          LogConfiguration:
+            LogDriver: 'awslogs'
+            Options:
+              awslogs-group: !Sub /ecs/${LoggingName}
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: ecs
+

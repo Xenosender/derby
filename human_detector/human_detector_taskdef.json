@@ -1,0 +1,35 @@
+{
+    "family": "derbyHumanDetectionTask",
+    "requiresCompatibilities":["EC2"],
+    "executionRoleArn": "arn:aws:iam::262436596026:role/derbyEcsTaskExecutionRole",
+    "taskRoleArn": "arn:aws:iam::262436596026:role/derbyEcsTaskExecutionRole",
+    "placementConstraints": [
+        {
+            "expression": "attribute:ecs.instance-type == p2.xlarge",
+            "type": "memberOf"
+        }
+    ],
+    "cpu": "2048",
+    "memory": "2048",
+    "containerDefinitions": [
+        {
+            "name": "derbyHumanDetectionTask",
+            "essential": true,
+            "image": "262436596026.dkr.ecr.eu-west-1.amazonaws.com/derby/human_detector:latest",
+            "resourceRequirements": [
+                {
+                    "type": "GPU",
+                    "value": "1"
+                }
+            ],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/derby-human-detection",
+                    "awslogs-region": "eu-west-1",
+                    "awslogs-stream-prefix": "ecs"
+                }
+            }
+        }
+    ]
+}

@@ -1,3 +1,4 @@
 example/*
 model/*
 !model/*.sh
+aws_ecr_conf.json
