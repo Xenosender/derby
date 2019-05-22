@@ -351,6 +351,7 @@ Resources:
   ECSTaskExecutionRole:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: derbyEcsTaskExecutionRole
       AssumeRolePolicyDocument:
         Statement:
         - Effect: Allow
