@@ -1,9 +1,16 @@
+# This file is used by docker to determine what files to keep or ignore when adding the directory to a docker image
+
+# remove examples
 src/example/*
+# remove models but keep downloading scripts
 src/model/*
 !src/model/*.sh
+# remove docker-related files
 Dockerfile
 .dockerignore
-.gitignore
 build_dockerfile.sh
 run_docker_local.sh
+# remove aws-related files
 aws_ecr_conf.json
+# remove git-related files
+.gitignore

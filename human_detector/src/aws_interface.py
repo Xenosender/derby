@@ -1,3 +1,18 @@
+# Copyright 2019 Cyril Poulet, cyril.poulet@centraliens.net
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 import json
 import os
 import tempfile
@@ -18,6 +33,7 @@ def get_object_from_s3(region_id, bucket_name, key, local_filename):
     """
     download file from s3 to local file. You must have access rights
 
+    :param region_id: region for the bucket (eg "eu-west-1")
     :param bucket_name: name of the bucket
     :param key: key of the file to get in the bucket
     :param local_filename: path to file to write
@@ -36,6 +52,7 @@ def put_object_to_s3(region_id, local_filename, bucket_name, key):
     """
     upload file to s3 from local file. You must have access rights
 
+    :param region_id: region for the bucket (eg "eu-west-1")
     :param local_filename: path to file to write
     :param bucket_name: name of the bucket
     :param key: key of the file to write in the bucket
@@ -104,7 +121,25 @@ def process_video(step_name,
                   video_s3_region_id, video_s3_bucket, video_s3_key,
                   dyndb_region_id, dyndb_tableId,
                   logger):
+    """
+    This function :
+        - gets the video doc from dynamoDB,
+        - sets the step state to "running" and updates the DB
+        - get the video from S3
+        - applies :param video_analyzer: to it
+        - pushes the results to a file on s3
+        - updates the DB doc with state="done" and a path to the result file
 
+    :param step_name: name of the current step
+    :param video_id: dynamoDB id of the video to process
+    :param video_analyzer: instanciated VideoAnalyzer
+    :param video_s3_region_id: region for the s3 bucket (eg "eu-west-1")
+    :param video_s3_bucket: name of the bucket to get the video from
+    :param video_s3_key: key of the file to get in the bucket
+    :param dyndb_region_id: region of the dynamoDB table to get from
+    :param dyndb_tableId: table to get from
+    :param logger: Logging.Logger object to log to
+    """
     # get doc from dynamodb
     logger.info("Getting doc from dynamoDB")
     video_doc = get_video_info_from_dynamo_db(dyndb_region_id, dyndb_tableId, {"VideoId": int(video_id)})
@@ -157,7 +192,16 @@ def process_video(step_name,
 
 
 if __name__ == "__main__":
+    """
+    Main function and entrypoint of the docker container
 
+    It loads the variables, connects to SQS, instantiate the VideoAnalyzer, then waits for messages and processes them as they come
+
+    IMPORTANT : for calls to AWS you need to specify the region, because though you do need it locally (it is in your AWS identity file),
+    your container will need it once on a cluster (the information is not passed on by ECS)
+    """
+
+    # get variables
     with open("variables.json") as f:
         params = json.load(f)
 
@@ -165,12 +209,14 @@ if __name__ == "__main__":
     sqs_queue_name = params["aws_queues"][current_detector]
     module_parameters = params["human_detection"]
 
+    # configure logging
     logging.basicConfig(stream=sys.stdout,
                         level=logging.DEBUG,
                         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
     logger = logging.getLogger("HumanDetectionAWSInterface")
 
+    # connect to SQS
     logger.info("Starting up. Connecting to SQS queue {}".format(sqs_queue_name))
     sqs_queue = None
     try:
@@ -181,6 +227,7 @@ if __name__ == "__main__":
         logger.error("Could not connect to SQS : {}. Exiting".format(e))
         exit()
 
+    # load VideoAnalyzer
     logger.info("Instantiating analyzer")
     try:
         video_analyzer = VideoAnalyzer(**module_parameters)
@@ -188,6 +235,7 @@ if __name__ == "__main__":
         logger.error("Could not instantiate analyzer : {}. Exiting".format(e))
         exit()
 
+    # enter message processing loop
     logger.info("Entering main loop")
     run = True
     while run:
@@ -202,6 +250,7 @@ if __name__ == "__main__":
                         run = False
                         break
 
+                # manage requests for video processing
                 video_id = message_body["VideoId"]
                 video_file = message_body["s3"]
 

@@ -1,5 +1,16 @@
 #!/usr/bin/env bash
 
+# script to push a docker image to ECR
+# 	- creates a repository in ECR (ie a naming convention that will group all versions of a same docker image)
+# 	- saves the config of this repository in a local file
+#	- tags the local image with the correct naming convention for ECR
+#	- logs with docker to the ECR repository
+# 	- pushes the image
+#
+#	Arguments
+#		1) name of the image (opt. default : "derby/human_detector")
+#		2) name of the file to save the ECR repo conf to (opt. default : "aws_ecr_conf.json")
+
 image_name=$1
 if [[ -z "$image_name" ]]; then
     image_name="derby/human_detector"

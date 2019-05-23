@@ -48,6 +48,9 @@ class HumanDetector(Detector):
         This class implements a detector of people in images, based on a trained model which is loaded at init.
         Model must be a trained TF model.
         To be able to leverage GPUs (if available), it must be a saved checkpoint (meta/index/data), not a frozen model (pb)
+        (Though a frozen model will work if it has been frozen with GPU mappings)
+
+        Credits for the model go to the tensorflow model zoo http://download.tensorflow.org/models/object_detection/
 
         :param saved_model: path to the model files (no extension)
         :param output_ind_for_humans: index of the output class for humans

@@ -1,3 +1,18 @@
+# Copyright 2019 Cyril Poulet, cyril.poulet@centraliens.net
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 import importlib
 from utils import camelcase_to_underscores
 
@@ -7,6 +22,9 @@ class Detector(object):
     def __init__(self, detected_category):
         """
         This class is a base class for all object detectors in single images
+
+        IMPORTANT: all subclasses must be in a module which name is the name of the class but in underscore notation (eg HumanDetector in human_detector.py)
+        This allows the factory to dynamically load subclasses.
 
         :param detected_category: str (name of detected object)
         """
@@ -48,7 +66,7 @@ class DetectorFactory:
     @staticmethod
     def get_detector(detector_name):
         """
-        factory to get detectors
+        factory to get detectors. It will convert the name of the class to underscores and try to load a module of this name.
 
         :param detector_name: str - subclass name to instanciate
         :return: subclass

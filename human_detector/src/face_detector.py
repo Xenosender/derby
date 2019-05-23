@@ -43,8 +43,8 @@ class FaceDetector(Detector):
                  min_detection_score=tf_model_human_threshold,
                  max_batch_size=batch_max_size):
         """
-        This class implements a detector of faces in images,
-        credits for the trained model to https://github.com/yeephycho/tensorflow-face-detection
+        This class implements a detector of faces in images, using a mobilenet SingleShot Detector trained on WiderFace database.
+        Credits for the trained model to https://github.com/yeephycho/tensorflow-face-detection
         """
         super().__init__("Face")
 

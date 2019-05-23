@@ -12,17 +12,28 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 import json
 import decimal
 from tensorflow.python.client import device_lib
 
 
 def get_available_gpus():
+    """
+    Lists all available GPUs 
+
+    :returns: list of gpu names
+    """
     local_device_protos = device_lib.list_local_devices()
     return [x.name for x in local_device_protos if x.device_type == 'GPU']
 
 
 def camelcase_to_underscores(str_val):
+    """
+    Turns strings in camel case to underscores  (eg ThisExampleRocks -> this_example_rocks)
+
+    :return: string
+    """
     str_val = str_val[0].lower() + str_val[1:]
     for i in range(1, len(str_val)-2):
         if str_val[i].isupper():

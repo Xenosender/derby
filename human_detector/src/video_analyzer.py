@@ -27,6 +27,12 @@ logging.basicConfig(stream=sys.stdout,
 class VideoAnalyzer(object):
 
     def __init__(self, detectors=None, frame_ratio=1.):
+        """
+        This class instantiate N detectors and applies them to frames of a given video
+
+        :param detectors: [(detector_name, parameters_dict), ...] -> list of tuples (str, dict). The detector_name must be an existing Detector subclass
+        :param frame_ratio: ratio of frames to analyze (1 -> all frames, 0.2 -> 1 on 5, etc)
+        """
         if detectors is None:
             detectors = [("HumanDetector", {})]
 
@@ -43,14 +49,31 @@ class VideoAnalyzer(object):
         self._analysis_ratio = float(frame_ratio)
 
     def analyze_video(self, path_to_video):
+        """
+        Loads a video and applies the detectors to the frames, with respect to the ratio defined at instantiation
+
+        :param path_to_video: path to the video to annalyze
+        :return:  {
+                    "fps": vid_fps, 
+                    "codec_code": vid_codec_code, 
+                    "frames": list of dict {
+                                    "frame_index": ,
+                                    "frame_timestamp": 
+                                    "detector_name_1":  {detection results for given frame},
+                                    ...
+                                    }
+                  }
+        """
         one_frame_every_n_frame = int(1./self._analysis_ratio)
         self._logger.info("Analyzing file {}, 1 frame every {} frame".format(path_to_video, one_frame_every_n_frame))
+        # open video
         cap = cv2.VideoCapture(path_to_video)
-
+        # get various infos on the video
         vid_fps = cap.get(cv2.CAP_PROP_FPS)
         vid_codec_code = cap.get(cv2.CAP_PROP_FOURCC)
         self._logger.info("Detected codec and FPS: {}, {}".format(vid_codec_code, vid_fps))
 
+        # determine processing batch size from detectors
         max_batch_size = min([c.batch_max_size for c in self._detectors])
         current_frame_ind = 0
         input_timestamps = []
@@ -58,6 +81,18 @@ class VideoAnalyzer(object):
         frame_results = []
 
         def process_results(frames_info, results_dict):
+            """
+            merge results from various detectors
+
+            :param frames_info: list of tuples (index of frame, time of frame)
+            :param results_dict: list of dict {detector_name: {detection results for given frame}}
+            :returns: list of dict {
+                                    "frame_index": ,
+                                    "frame_timestamp": 
+                                    "detector_name_1":  {detection results for given frame},
+                                    ...
+                                    }
+            """
             results = []
             for i, (f_ind, f_tsp) in enumerate(frames_info):
                 im_res = {
@@ -72,26 +107,32 @@ class VideoAnalyzer(object):
         while True:
             r, img = cap.read()
             if not r:
+                # we reached the end of the video
                 break
 
+            # count frames, skip frames if necessary to respect processing ratio
             current_frame_ind += 1
             if (current_frame_ind - 1) % one_frame_every_n_frame != 0:
                 continue
 
             if len(input_images) < max_batch_size:
+                # while we do not have a complete batch, stack images to process
                 input_images.append(img)
                 input_timestamps.append((current_frame_ind, cap.get(cv2.CAP_PROP_POS_MSEC)))
 
             if len(input_images) == max_batch_size:
+                # process batch
                 detection_results = {}
                 for det in self._detectors:
                     det_results = det.analyze_images(input_images)
                     detection_results[det.detected_category] = det_results
                 batch_results = process_results(input_timestamps, detection_results)
+                # store results
                 frame_results.extend(batch_results)
                 input_images = []
                 input_timestamps = []
 
+        # process last batch (which may be incomplete)
         detection_results = {}
         if input_images:
             for det in self._detectors:
