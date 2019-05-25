@@ -42,7 +42,9 @@ DynamoDB documents inserted
 ```json
 {
     "VideoId": int_id,                              // randomly generated primary key
-    "process_step": "timesplit",                    // step at which the video was created ("upload" or "timesplit", at the moment)
+    "process_steps": [                              // steps applied to the video, in order ("upload" or "timesplit", at the moment)
+      {"step": "timesplit", "state": "done"}        // if state is "done", the video can be sent to next step
+    ],
     "creation_time": "date_isoformat",              // creation time
     "bucket": "storing_bucket",                     // storage bucket
     "key": "storing_path",                          // storage key
@@ -85,13 +87,16 @@ For this reason, the script:
     
 - uninstalls boto3 locally
 - installs all dependencies in a local directory
-- zips it and adds code to it
+- downloads a self-contained ffmpeg executable and adds it to the local directory
+- zips the local directory and adds code to it
 - uploads to AWS lambda
 - cleans
 - reinstall boto3 locally
     
 
 To setup the name of the lambda to update, change AWS_LAMBDAFUNCTION_NAME in the deployment script.
+
+IMPORTANT : To work once deployed, the python file *MUST NOT* have a "if __name__ == '__main__'"!
 
 
 Possible improvements

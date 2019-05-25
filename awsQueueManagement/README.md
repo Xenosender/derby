@@ -4,8 +4,8 @@ LAMBDA FUNCTION PROJECT TO MANAGE ALL SQS QUEUES USED TO ARTICULATE SYSTEMS
 This is lambda function which is called by updates on DynamoDB main table. It:
     - checks that all SQS queues declared in the variables.json file exist, and create those that don't
     - for each listed change in dynamoDB:
-        - extract videoID, s3 bucket/key, and current process step
-        - send it to the correct SQS queue for the next process queue
+        - extract videoID, s3 bucket/key, and current process step (name and state)
+        - send it to the correct SQS queue for the next process
     
 This is done to automatically propagate changes on dynamoDB records
 
@@ -44,7 +44,7 @@ AWS setup
 - **lambda**: create a lambda with the name you want, in python 3.6. It should create the associated IAM role.
     - you can configure the trigger from there, from your input DynamoDB table
 - **IAM**: add inline policies to the role associated to the lambda:
-    - read on DynamoDB streams   (This will be added automatically if you create your lambda from the "create trigger" button in DynamoDB)
+    - read on DynamoDB streams   (This will be added automatically if you create your lambda from the "create trigger" button in DynamoDB), and launch lambdas
     - read and write on SQS queues and messages
 
 
@@ -63,6 +63,8 @@ For this reason, the script:
 
 To setup the name of the lambda to update, change AWS_LAMBDAFUNCTION_NAME in the deployment script.
 
+
+IMPORTANT : To work once deployed, the python file *MUST NOT* have a "if __name__ == '__main__'"!
 
 
 Author : Cyril Poulet, cyril.poulet@centraliens.net
