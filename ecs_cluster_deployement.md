@@ -21,7 +21,10 @@ The resources are:
 Deployement may take up to 10min to complete from the command to a running EC2 instance attached to the cluster.
 
 
-IMPORTANT : the launch configuration contains in "UserData" the launching script for the instances :
+IMPORTANT POINTS
+----------------
+
+1) The launch configuration contains **in "UserData" the launching script for the instances** :
 
 ```bash
 	#!/bin/bash -x
@@ -42,9 +45,15 @@ This script is VERY important:
 If any of these parts fails, the deployement won't work and will rollback, so be careful toying with this script.
 
 
-IMPORTANT 2:
-Once the cluster deployed, you only pay for running EC2 instances. As it is, it deploys p2xlarge instances, which are outside of free tier (they cost around 1$/hour). If you want to toy while staying in the free tier, modify the template to launch t2micro instances.
+2) Once the cluster deployed, **you only pay for running EC2 instances**. As it is, it deploys p2xlarge instances, which are outside of free tier (they cost around 1$/hour). **If you want to toy while staying in the free tier, modify the template to launch t2micro instances**.
 
+
+3) **Connecting to running instance**
+To be able to connect to a running EC2 instance, it needs to be launched with an open ssh port config, and loaded with a ssh key. you have to **create a ssh key** in the [network & security part of EC2 service](https://eu-west-1.console.aws.amazon.com/ec2/v2/home?region=eu-west-1#KeyPairs:sort=keyName), **save it locally** to be able to use it, and **put the name of your key in the KeyName parameter of the yaml template**.
+
+4) **logging**
+The sections "cloudwatch:\*" and "logs:\*" in the IAM role descriptions are here to enable logging to cloudwatch. However, some services will automatically send their logs while others not (you will have to configure your containers to use aws logging agent).
+ 
 
 Files
 -----

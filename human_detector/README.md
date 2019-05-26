@@ -132,14 +132,29 @@ Therefore here only a requirements.txt is given. You have to have CUDA 9.0 and C
 
 AWS setup
 ---------
-This project needs access to **s3**, **dynamoDB**, **SQS**, **ECS**, **ECR** (and in the future **cloudformation**)
+This project needs access to **s3**, **dynamoDB**, **SQS**, **Cloudwatch**, **ECS**, **ECR** (and in the future **cloudformation**)
 
 Regarding the access policies:
 - ECS and ECR are called directly by you, so you have to have personnally the rights to call these services
-- s3, dynamoDB and SQS are called by the container :
+- s3, dynamoDB, SQS and cloudwatch are used by the container :
     - the buckets, table and queue are existing resources from the "derbyTimeSplitVideoLambda" and awsQueueManagement projects. Refer to it if you don't already have these.
     - locally, the container uses your own credentials, so you need to have rights to access these resources
     - remotely, the rights are provided by the *derbyEcsTaskExecutionRole* deployed at the same time as the cluster by cloudformation (see _cluster_deployement.md_ at the root of the global project). Refer to the cluster deployment files for more info
+
+Logging : to make your container send logs to cloudwatch when deployed on the cluster, you have to configure it to use the aws log agent in the task description:
+
+```json
+    "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+            "awslogs-group": "/ecs/derby-human-detection",
+            "awslogs-region": "eu-west-1",
+            "awslogs-stream-prefix": "ecs"
+        }
+    }
+```
+
+This agent redirects stdout and stderr to cloudwatch, so be sure to log to these streams.
 
 
 Deployment
