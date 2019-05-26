@@ -1,4 +1,10 @@
 {
+	"process_steps": ["upload", "timesplit", "human_detection", "team_detector"],
+	"aws_region": "eu-west-1",
+	"aws_queues": {
+		"human_detection": "derby-call-humandetector",
+		"team_detection": "derby-call-teamdetector"
+	},
 	"video_upload": {
     	"upload_bucket_name": "cp-derby-bucket",
     	"bucket_region": "eu-west-1",
@@ -9,6 +15,13 @@
 		"output_bucket": "cp-derby-bucket",
 		"output_key_prefix": "project/{video_name}/split",
 		"output_files_duration_in_sec": 30
+	},
+	"human_detection": {
+		"detectors": [
+			["HumanDetector", {"min_detection_score": 0.4, "max_batch_size": 5}],
+			["FaceDetector", {"min_detection_score": 0.4, "max_batch_size": 5}]
+		],
+		"frame_ratio": 0.2
 	},
 	"dynamodb": {
 		"region": "eu-west-1",
