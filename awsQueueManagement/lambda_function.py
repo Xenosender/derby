@@ -66,6 +66,9 @@ def lambda_handler(event, context):
         next_process_step = params["process_steps"][current_process_step_ind+1]
 
         # print(videoId, s3_bucket, s3_key, current_process_step)
+        if next_process_step not in params["aws_queues"]:
+            print('Next process step does not have a queue yet. skipping')
+            continue
         target_queue_name = params["aws_queues"][next_process_step].lower()
         queue = sqs.get_queue_by_name(QueueName=target_queue_name)
         message_body = json.dumps({
