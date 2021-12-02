@@ -6,7 +6,7 @@ verify_ssl = true
 [dev-packages]
 
 [packages]
-wiki = "==0.4.4"
+wiki = "==0.7.9"
 south = "*"
 constants = "*"
 django-compressor = "*"
